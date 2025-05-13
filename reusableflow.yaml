@@ -21,13 +21,13 @@ jobs:
         with:
           dotnet-version: '8.0.x'
 
-      - name: Build .NET API project
+      - name: Restore and build the .NET project
         run: |
           dotnet restore
           dotnet build --no-restore
           nohup dotnet run --urls "http://0.0.0.0:5001" &
 
-      - name: Set up Python and install dependencies
+      - name: Set up Python 3.9
         uses: actions/setup-python@v4
         with:
           python-version: '3.9'
