@@ -1,4 +1,4 @@
-name: Build & Split Swagger by Environment
+name: Build and Split Swagger (Local)
 
 on:
   push:
@@ -13,7 +13,7 @@ jobs:
         env: [dev, qa, pt]
 
     steps:
-    - name: Checkout repository
+    - name: Checkout code
       uses: actions/checkout@v3
 
     - name: Setup .NET SDK
@@ -22,18 +22,21 @@ jobs:
         dotnet-version: '8.0.x'
 
     - name: Restore dependencies
-      run: dotnet restore MyApi.csproj
+      run: dotnet restore
 
     - name: Build project
-      run: dotnet build MyApi.csproj --configuration Release
+      run: dotnet build --configuration Release
 
     - name: Publish project
-      run: dotnet publish MyApi.csproj --configuration Release -o ./out
+      run: dotnet publish --configuration Release -o ./out
 
-    - name: Run Web API (background)
+    - name: Run API locally (in background)
       run: |
-        nohup dotnet ./out/MyApi.dll --environment ${{ matrix.env }} &
+        nohup dotnet ./out/MyApi.dll --environment ${{ matrix.env }} > api.log 2>&1 &
         sleep 10
+
+    - name: Print API Logs (for debugging)
+      run: cat api.log || true
 
     - name: Setup Python
       uses: actions/setup-python@v4
@@ -41,12 +44,12 @@ jobs:
         python-version: '3.11'
 
     - name: Install Python packages
-      run: pip install pyyaml requests
+      run: pip install requests pyyaml
 
-    - name: Download & Split Swagger YAML
+    - name: Download Swagger and Split
       run: python Scripts/split_openapi.py ${{ matrix.env }}
 
-    - name: Upload split YAMLs as artifact
+    - name: Upload split YAMLs
       uses: actions/upload-artifact@v3
       with:
         name: swagger-${{ matrix.env }}

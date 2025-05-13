@@ -1,12 +1,13 @@
-import yaml
 import os
 import sys
+import json
+import yaml
 import requests
 
-def download_swagger_yaml(url):
+def download_swagger_json(url):
     response = requests.get(url)
     response.raise_for_status()
-    return yaml.safe_load(response.text)
+    return response.json()
 
 def split_paths(openapi_dict, output_dir):
     os.makedirs(output_dir, exist_ok=True)
@@ -23,10 +24,10 @@ def split_paths(openapi_dict, output_dir):
 
 if __name__ == "__main__":
     env = sys.argv[1]
-    swagger_url = f"http://localhost:5000/swagger/v1/swagger.yaml"
+    swagger_url = "http://localhost:5000/swagger/v1/swagger.json"
     output_dir = f"./output/{env}"
 
-    print(f"Downloading spec from: {swagger_url}")
-    spec = download_swagger_yaml(swagger_url)
-    split_paths(spec, output_dir)
-    print(f"Split files saved to: {output_dir}")
+    print(f"Downloading Swagger spec from {swagger_url}")
+    openapi = download_swagger_json(swagger_url)
+    split_paths(openapi, output_dir)
+    print(f"YAMLs saved to: {output_dir}")
