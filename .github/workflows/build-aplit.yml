@@ -1,8 +1,9 @@
-name: Build & Split Swagger
+name: Build & Split Swagger by Environment
 
 on:
   push:
-    branches: [ main ]
+    branches: [main]
+  workflow_dispatch:
 
 jobs:
   build-and-process:
@@ -11,30 +12,27 @@ jobs:
       matrix:
         env: [dev, qa, pt]
 
-    services:
-      myapi:
-        image: mcr.microsoft.com/dotnet/aspnet:8.0
-        ports:
-          - 5000:80
-
     steps:
-    - name: Checkout Code
+    - name: Checkout repository
       uses: actions/checkout@v3
 
-    - name: Setup .NET
+    - name: Setup .NET SDK
       uses: actions/setup-dotnet@v3
       with:
-        dotnet-version: 8.0.x
+        dotnet-version: '8.0.x'
 
-    - name: Build .NET Project
-      run: dotnet build MyApi/MyApi.csproj -c Release
+    - name: Restore dependencies
+      run: dotnet restore MyApi.csproj
 
-    - name: Publish Web API
-      run: dotnet publish MyApi/MyApi.csproj -c Release -o out
+    - name: Build project
+      run: dotnet build MyApi.csproj --configuration Release
 
-    - name: Run API in Background
+    - name: Publish project
+      run: dotnet publish MyApi.csproj --configuration Release -o ./out
+
+    - name: Run Web API (background)
       run: |
-        nohup dotnet out/MyApi.dll --environment ${{ matrix.env }} & 
+        nohup dotnet ./out/MyApi.dll --environment ${{ matrix.env }} &
         sleep 10
 
     - name: Setup Python
@@ -42,14 +40,14 @@ jobs:
       with:
         python-version: '3.11'
 
-    - name: Install Python Deps
+    - name: Install Python packages
       run: pip install pyyaml requests
 
-    - name: Download and Split Swagger
+    - name: Download & Split Swagger YAML
       run: python Scripts/split_openapi.py ${{ matrix.env }}
 
-    - name: Upload Artifacts
+    - name: Upload split YAMLs as artifact
       uses: actions/upload-artifact@v3
       with:
-        name: swagger-split-${{ matrix.env }}
+        name: swagger-${{ matrix.env }}
         path: output/${{ matrix.env }}
