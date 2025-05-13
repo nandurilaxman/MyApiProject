@@ -8,9 +8,6 @@ on:
 jobs:
   generate-docs:
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: MyApiProject
 
     steps:
       - name: 📥 Checkout code
