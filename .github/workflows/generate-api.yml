@@ -54,8 +54,9 @@ jobs:
         run: python3 Scripts/split_openapi.py ${{ github.event.inputs.environment }}
 
       - name: 📤 Upload generated YAML files
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@actions/upload-artifact@v3
         with:
           name: api-yaml-${{ github.event.inputs.environment }}
           path: MyApiProject/output/${{ github.event.inputs.environment }}
+
 
