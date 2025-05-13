@@ -43,7 +43,7 @@ jobs:
         run: python3 Scripts/split_openapi.py dev
 
       - name: 📤 Upload generated YAML files
-        uses: actions/upload-artifact@v3  # Updated version
+        uses: actions/upload-artifact@v3  # Correct stable version
         with:
           name: api-yaml-dev
           path: MyApiProject/output/dev
