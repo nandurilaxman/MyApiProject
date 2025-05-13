@@ -1,0 +1,52 @@
+name: Reusable Swagger Generation Workflow
+
+on:
+  workflow_call:
+    inputs:
+      environment:
+        required: true
+        type: string
+
+jobs:
+  generate-and-split:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v3
+
+      - name: 🛠 Setup .NET
+        uses: actions/setup-dotnet@v3
+        with:
+          dotnet-version: '8.x'
+
+      - name: 🔧 Restore & Build
+        run: |
+          dotnet restore
+          dotnet build --no-restore
+
+      - name: 🧰 Install Swashbuckle CLI
+        run: |
+          dotnet tool install --global Swashbuckle.AspNetCore.Cli
+          echo "$HOME/.dotnet/tools" >> $GITHUB_PATH
+
+      - name: 📄 Generate Swagger YAML from DLL
+        run: |
+          dotnet swagger tofile --yaml --output swagger.yaml bin/Debug/net8.0/MyApi.dll v1
+
+      - name: 🐍 Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.x'
+
+      - name: 📦 Install Python dependencies
+        run: pip install requests pyyaml urllib3
+
+      - name: 🧪 Split Swagger YAML by path
+        run: python3 Scripts/split_openapi.py ${{ inputs.environment }}
+
+      - name: 📤 Upload split YAML files
+        uses: actions/upload-artifact@v3
+        with:
+          name: api-yaml-${{ inputs.environment }}
+          path: MyApiProject/output/${{ inputs.environment }}
