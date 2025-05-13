@@ -1,23 +1,15 @@
-name: Deploy API and Extract Swagger
+name: Generate Swagger and Split YAMLs
 
 on:
-  push:
-    branches:
-      - main
   workflow_dispatch:
     inputs:
       environment:
-        description: 'Select the environment (dev, qa, prod)'
+        description: "Choose environment (dev, qa, pt)"
         required: true
-        type: choice
-        options:
-          - dev
-          - qa
-          - prod
-        default: dev
+        default: "dev"
 
 jobs:
-  call-extract-apis:
-    uses: ./path/to/extract-swagger-apis.yml
+  call-swagger-workflow:
+    uses: ./.github/workflows/reusable-swagger.yml
     with:
       environment: ${{ github.event.inputs.environment }}
