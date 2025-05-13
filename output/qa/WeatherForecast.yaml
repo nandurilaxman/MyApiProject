@@ -1,0 +1,28 @@
+info:
+  title: My API
+  version: v1
+openapi: 3.0.4
+paths:
+  /WeatherForecast:
+    get:
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                items:
+                  type: string
+                type: array
+            text/json:
+              schema:
+                items:
+                  type: string
+                type: array
+            text/plain:
+              schema:
+                items:
+                  type: string
+                type: array
+          description: OK
+      tags:
+      - WeatherForecast

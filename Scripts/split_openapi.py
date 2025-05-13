@@ -3,11 +3,16 @@ import sys
 import json
 import yaml
 import requests
+import urllib3
+urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+
 
 def download_swagger_json(url):
-    response = requests.get(url)
+    print(f"Downloading Swagger spec from {url}")
+    response = requests.get(url, verify=False)  # Disable SSL verification
     response.raise_for_status()
     return response.json()
+
 
 def split_paths(openapi_dict, output_dir):
     os.makedirs(output_dir, exist_ok=True)
@@ -24,9 +29,11 @@ def split_paths(openapi_dict, output_dir):
 
 if __name__ == "__main__":
     env = sys.argv[1]
-    swagger_url = "http://localhost:5000/swagger/v1/swagger.json"
-    output_dir = f"./output/{env}"
+    # swagger_url = "http://localhost:5000/swagger/v1/swagger.json"
+    swagger_url = "http://localhost:5001/swagger/v1/swagger.json"
 
+    output_dir = f"./output/{env}"
+    response = requests.get(swagger_url, verify=False)
     print(f"Downloading Swagger spec from {swagger_url}")
     openapi = download_swagger_json(swagger_url)
     split_paths(openapi, output_dir)

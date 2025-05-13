@@ -1,7 +1,13 @@
-[ApiController]
-[Route("[controller]")]
-public class WeatherForecastController : ControllerBase
+using Microsoft.AspNetCore.Mvc;
+
+namespace MyApi.Controllers
 {
-    [HttpGet]
-    public IEnumerable<string> Get() => new[] { "Sunny", "Cloudy", "Rainy" };
+    [ApiController]
+    [Route("[controller]")]
+    public class WeatherForecastController : ControllerBase
+    {
+        [HttpGet]
+        public IEnumerable<string> Get() => new[] { "Sunny", "Rainy", "Cloudy" };
+    }
 }
+
