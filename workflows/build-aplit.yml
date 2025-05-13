@@ -1,0 +1,55 @@
+name: Build & Split Swagger
+
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  build-and-process:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        env: [dev, qa, pt]
+
+    services:
+      myapi:
+        image: mcr.microsoft.com/dotnet/aspnet:8.0
+        ports:
+          - 5000:80
+
+    steps:
+    - name: Checkout Code
+      uses: actions/checkout@v3
+
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v3
+      with:
+        dotnet-version: 8.0.x
+
+    - name: Build .NET Project
+      run: dotnet build MyApi/MyApi.csproj -c Release
+
+    - name: Publish Web API
+      run: dotnet publish MyApi/MyApi.csproj -c Release -o out
+
+    - name: Run API in Background
+      run: |
+        nohup dotnet out/MyApi.dll --environment ${{ matrix.env }} & 
+        sleep 10
+
+    - name: Setup Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+
+    - name: Install Python Deps
+      run: pip install pyyaml requests
+
+    - name: Download and Split Swagger
+      run: python Scripts/split_openapi.py ${{ matrix.env }}
+
+    - name: Upload Artifacts
+      uses: actions/upload-artifact@v3
+      with:
+        name: swagger-split-${{ matrix.env }}
+        path: output/${{ matrix.env }}
