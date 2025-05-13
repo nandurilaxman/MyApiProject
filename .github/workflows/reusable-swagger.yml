@@ -1,14 +1,15 @@
-name: Reusable Swagger Generation Workflow
+name: Generate and Split Swagger YAMLs
 
 on:
   workflow_call:
     inputs:
       environment:
+        description: "Environment name (e.g. dev, qa, pt)"
         required: true
         type: string
 
 jobs:
-  generate-and-split:
+  generate-docs:
     runs-on: ubuntu-latest
 
     steps:
@@ -25,14 +26,11 @@ jobs:
           dotnet restore
           dotnet build --no-restore
 
-      - name: 🧰 Install Swashbuckle CLI
-        run: |
-          dotnet tool install --global Swashbuckle.AspNetCore.Cli
-          echo "$HOME/.dotnet/tools" >> $GITHUB_PATH
-
       - name: 📄 Generate Swagger YAML from DLL
         run: |
-          dotnet swagger tofile --yaml --output swagger.yaml bin/Debug/net8.0/MyApi.dll v1
+          dotnet tool install --global Swashbuckle.AspNetCore.Cli
+          export PATH="$PATH:$HOME/.dotnet/tools"
+          dotnet swagger tofile --output swagger.yaml bin/Debug/net8.0/MyApi.dll v1
 
       - name: 🐍 Setup Python
         uses: actions/setup-python@v4
@@ -40,12 +38,40 @@ jobs:
           python-version: '3.x'
 
       - name: 📦 Install Python dependencies
-        run: pip install requests pyyaml urllib3
+        run: pip install pyyaml
 
       - name: 🧪 Split Swagger YAML by path
-        run: python3 Scripts/split_openapi.py ${{ inputs.environment }}
+        run: |
+          python3 - <<EOF
+          import yaml
+          import os
 
-      - name: 📤 Upload split YAML files
+          env = "${{ inputs.environment }}"
+          with open("swagger.yaml", "r") as f:
+              openapi = yaml.safe_load(f)
+
+          output_dir = f"MyApiProject/output/{env}"
+          os.makedirs(output_dir, exist_ok=True)
+
+          for path, path_item in openapi.get("paths", {}).items():
+              safe_path = path.strip("/").replace("/", "_").replace("{", "").replace("}", "")
+              if not safe_path:
+                  safe_path = "root"
+
+              out_file = os.path.join(output_dir, f"{safe_path}.yaml")
+              path_yaml = {
+                  "openapi": openapi.get("openapi", "3.0.0"),
+                  "info": openapi.get("info", {}),
+                  "paths": {path: path_item}
+              }
+
+              with open(out_file, "w") as f:
+                  yaml.dump(path_yaml, f)
+
+          print(f"✅ Split {len(openapi.get('paths', {}))} paths into {output_dir}")
+          EOF
+
+      - name: 📤 Upload generated YAML files
         uses: actions/upload-artifact@v3
         with:
           name: api-yaml-${{ inputs.environment }}
