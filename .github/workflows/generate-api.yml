@@ -4,6 +4,11 @@ on:
   push:
     branches: [ main ]
   workflow_dispatch:
+    inputs:
+      environment:
+        description: "Choose environment (dev, qa, pt)"
+        required: true
+        default: "dev"
 
 jobs:
   generate-docs:
@@ -26,9 +31,15 @@ jobs:
       - name: 🚀 Run API in background
         run: |
           dotnet run & 
-          while ! curl -s http://localhost:5001/swagger/v1/swagger.json; do 
-            echo "Waiting for API to start..."; 
-            sleep 5; 
+          echo "Waiting for API to start..."
+          for i in {1..10}; do
+            if curl --silent http://localhost:5001/swagger/v1/swagger.json > /dev/null; then
+              echo "API is up!"
+              break
+            else
+              echo "Still waiting..."
+              sleep 5
+            fi
           done
 
       - name: 🐍 Setup Python
@@ -40,10 +51,10 @@ jobs:
         run: pip install requests pyyaml urllib3
 
       - name: 🧪 Run split_openapi script
-        run: python3 Scripts/split_openapi.py dev
+        run: python3 Scripts/split_openapi.py ${{ github.event.inputs.environment }}
 
       - name: 📤 Upload generated YAML files
-        uses: actions/upload-artifact@v3  # Correct stable version
+        uses: actions/upload-artifact@v3
         with:
-          name: api-yaml-dev
-          path: MyApiProject/output/dev
+          name: api-yaml-${{ github.event.inputs.environment }}
+          path: MyApiProject/output/${{ github.event.inputs.environment }}
