@@ -1,40 +1,36 @@
+import yaml
 import os
 import sys
-import json
-import yaml
-import requests
-import urllib3
-urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
+# Take environment from command-line args
+if len(sys.argv) != 2:
+    print("Usage: python split_openapi.py [dev|qa|pt]")
+    sys.exit(1)
 
-def download_swagger_json(url):
-    print(f"Downloading Swagger spec from {url}")
-    response = requests.get(url, verify=False)  # Disable SSL verification
-    response.raise_for_status()
-    return response.json()
+env = sys.argv[1]
 
+# Load Swagger YAML file
+with open("swagger.yaml", "r") as f:
+    openapi = yaml.safe_load(f)
 
-def split_paths(openapi_dict, output_dir):
-    os.makedirs(output_dir, exist_ok=True)
-    for path, methods in openapi_dict.get("paths", {}).items():
-        safe_path = path.strip("/").replace("/", "_") or "root"
-        output_file = os.path.join(output_dir, f"{safe_path}.yaml")
-        partial_doc = {
-            "openapi": openapi_dict.get("openapi", "3.0.0"),
-            "info": openapi_dict.get("info", {}),
-            "paths": {path: methods}
-        }
-        with open(output_file, "w") as f:
-            yaml.dump(partial_doc, f)
+# Prepare output directory
+output_dir = f"MyApiProject/output/{env}"
+os.makedirs(output_dir, exist_ok=True)
 
-if __name__ == "__main__":
-    env = sys.argv[1]
-    # swagger_url = "http://localhost:5000/swagger/v1/swagger.json"
-    swagger_url = "http://localhost:5001/swagger/v1/swagger.json"
+# Extract and write each API path to a separate file
+for path, path_item in openapi.get("paths", {}).items():
+    safe_path = path.strip("/").replace("/", "_").replace("{", "").replace("}", "")
+    if not safe_path:
+        safe_path = "root"
+    
+    out_file = os.path.join(output_dir, f"{safe_path}.yaml")
+    path_yaml = {
+        "openapi": openapi.get("openapi", "3.0.0"),
+        "info": openapi.get("info", {}),
+        "paths": {path: path_item}
+    }
+    
+    with open(out_file, "w") as f:
+        yaml.dump(path_yaml, f)
 
-    output_dir = f"./output/{env}"
-    response = requests.get(swagger_url, verify=False)
-    print(f"Downloading Swagger spec from {swagger_url}")
-    openapi = download_swagger_json(swagger_url)
-    split_paths(openapi, output_dir)
-    print(f"YAMLs saved to: {output_dir}")
+print(f"✅ Split {len(openapi.get('paths', {}))} paths into {output_dir}")
