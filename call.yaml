@@ -4,9 +4,20 @@ on:
   push:
     branches:
       - main
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Select the environment (dev, qa, prod)'
+        required: true
+        type: choice
+        options:
+          - dev
+          - qa
+          - prod
+        default: dev
 
 jobs:
   call-extract-apis:
-    uses: ./path/to/extract-swagger-apis.yml  # Path to reusable workflow
+    uses: ./path/to/extract-swagger-apis.yml
     with:
-      environment: 'dev'  # Specify the environment here (dev, qa, prod)
+      environment: ${{ github.event.inputs.environment }}
