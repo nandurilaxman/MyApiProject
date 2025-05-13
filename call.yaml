@@ -1,0 +1,12 @@
+name: Deploy API and Extract Swagger
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  call-extract-apis:
+    uses: ./path/to/extract-swagger-apis.yml  # Path to reusable workflow
+    with:
+      environment: 'dev'  # Specify the environment here (dev, qa, prod)
